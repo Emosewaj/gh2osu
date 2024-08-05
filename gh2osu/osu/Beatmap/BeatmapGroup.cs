@@ -4,8 +4,8 @@ namespace gh2osu.osu.Beatmap
 {
     internal class BeatmapGroup
     {
-        public string? Title;
-        public string? Artist;
+        public string Title = string.Empty;
+        public string Artist = string.Empty;
         public string? Charter;
         public int AudioLeadIn;
 
@@ -19,7 +19,14 @@ namespace gh2osu.osu.Beatmap
                 return;
             }
 
-            string targetPath = string.Format(@"{0}\{1} - {2}", selectedPath, Artist, Title);
+            string artist = Artist != string.Empty ? Artist : "Unknown Artist";
+            string title = Title != string.Empty ? Title : "Unknown Title";
+
+            if (artist == "Unknown Artist" || title == "Unknown Title")
+                Logger.Warn("Artist or Title were empty and were changed to either \"Unknown Artist\" or \"Unknown Title\" respectively!");
+
+            string targetFolder = ReplaceInvalidPathChars(string.Format("{0} - {1}", artist, title)).Trim();
+            string targetPath = string.Format(@"{0}\{1}", selectedPath, targetFolder).Trim();
 
             if (Directory.Exists(targetPath))
             {
@@ -28,10 +35,11 @@ namespace gh2osu.osu.Beatmap
             }
 
             Directory.CreateDirectory(targetPath);
+            Logger.Info(string.Format("Writing to folder {0}", targetPath));
 
             foreach (Difficulty difficulty in Difficulties)
             {
-                string targetFileName = string.Format("{0} - {1} [{2}].osu", Artist, Title, difficulty.Version);
+                string targetFileName = ReplaceInvalidFileNameChars(string.Format("{0} - {1} [{2}].osu", artist, title, difficulty.Version)).Trim();
 
                 Logger.Info(string.Format("Writing {0}...", targetFileName));
 
@@ -132,6 +140,16 @@ namespace gh2osu.osu.Beatmap
             }
 
             Logger.Info("Finished!");
+        }
+
+        private string ReplaceInvalidPathChars(string path)
+        {
+            return string.Join("_", path.Split(Path.GetInvalidPathChars()));
+        }
+
+        private string ReplaceInvalidFileNameChars(string filename)
+        {
+            return string.Join("_", filename.Split(Path.GetInvalidFileNameChars()));
         }
     }
 }
